@@ -8,7 +8,7 @@ use Exception;
 class URLParameterException extends Exception
 {
     public function render() {
-        $message = ApiMessagesTemplate::createResponse(false, 417, $this->getMessage());
+        $message = ApiMessagesTemplate::createResponse(false, 400, $this->getMessage());
         return $message;
     }
 }
