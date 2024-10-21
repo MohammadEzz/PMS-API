@@ -3,53 +3,9 @@
 namespace App\Http\Helpers\Api;
 
 use App\Exceptions\URLParameterException;
-// use URLParameterException;
-use Illuminate\Http\Request;
-
 class ApiFilter {
-    /**
-     * Filter
-     *
-     * @param  \Illuminate\Http\Request  $request
-     */
-    public function initilizeQueryParams(Request $request, $queryParams) {
-        $params = [];
-        foreach($queryParams as $name=>$value) {
-            $request->has($name) && $params[$name] = $value;
-        }
-        return $params;
-    }
 
-    /**
-     * Convert Paramaters into Conditional format ['field_name', 'operator', 'value']
-     *
-     * @param $queryParams
-     * @param $initilize
-     *
-     * @return Array of conditions
-     **/
-    public function buildFilterQuery($request, $queryParams, $initilize = true) {
-        $whereArray = [];
-
-        $params = ($initilize)
-        ? $this->initilizeQueryParams($request, $queryParams)
-        : $queryParams;
-
-        foreach($params as $name=>$value) {
-            if(is_array($value)) {
-                foreach($value as $index=>$value) {
-                    $whereArray[] = [$name, ComparisonOperator::COMPARISON[$index], $value];
-                }
-            }
-            else
-                $whereArray[] = [$name, "=", $value];
-        }
-
-        return $whereArray;
-    }
-
-
-    public function buildFilter($query, $mapArray) {
+    public function buildFilter($query, $fields) {
 
         if($query) {
             $sqlQuery = '';
@@ -78,8 +34,8 @@ class ApiFilter {
                                 if($index != false) {
                                     $filedName = trim(substr($query, $offset, ($index - $offset)));
 
-                                    if(in_array($filedName, array_keys($mapArray))) {
-                                        $sqlQuery .= "$mapArray[$filedName] ";
+                                    if(in_array($filedName, array_keys($fields))) {
+                                        $sqlQuery .= "$fields[$filedName] ";
                                         $offset = $index + 1;
                                         $nextPartOfQuery = QueryParts::OPERATOR;
                                     }
