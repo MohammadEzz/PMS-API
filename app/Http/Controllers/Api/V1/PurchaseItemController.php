@@ -38,10 +38,10 @@ class PurchaseItemController extends Controller
             "tax" => "tax",
             "discount" => "discount",
             "expiredate" => "expiredate",
-            "createdby" => "purchaseitems.created_by",
-            "updatedby" => "purchaseitems.updated_by",
-            "createdat" => "purchaseitems.created_at",
-            "updatedat" => "purchaseitems.updated_at",
+            "created_by" => "purchaseitems.created_by",
+            "updated_by" => "purchaseitems.updated_by",
+            "created_at" => "purchaseitems.created_at",
+            "updated_at" => "purchaseitems.updated_at",
         ];
 
         $fieldParams = $fields;
