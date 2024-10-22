@@ -40,7 +40,7 @@ class DrugController extends Controller
      
         $drugs = $drugRepository->fetchListOfItems($request, $fields);
         
-        return ApiMessagesTemplate::apiResponseDefaultMessage(true, 200, "Drugs readed successfully", $drugs);
+        return ApiMessagesTemplate::createResponse(true, 200, "Drugs readed successfully", $drugs);
     }
 
     /**
