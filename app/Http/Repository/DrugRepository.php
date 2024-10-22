@@ -75,7 +75,7 @@ class DrugRepository implements GeneralRepository {
         // Grouping
         $query->groupBy('drugs.id');  
 
-        $drugs = $rangeParams == 'all' ? $query->get() : $query->paginate($rangeParams);
+        $drugs = ($rangeParams == 'all' || $rangeParams < 20) ? $query->get() : $query->paginate($rangeParams);
 
         return $drugs->toArray();
     }
