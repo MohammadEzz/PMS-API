@@ -213,12 +213,12 @@ class ApiFilter {
                             elseif($query[$offset] === ';') {
                                 $sqlQuery .= "AND ";
                                 $offset++;
-                                $nextPartOfQuery = QueryParts::OPEN_PARENTHESES;
+                                $nextPartOfQuery = QueryParts::FIELD . QueryParts::OPEN_PARENTHESES;
                             }
                             elseif($query[$offset] === ',') {
                                 $sqlQuery .= "OR ";
                                 $offset++;
-                                $nextPartOfQuery = QueryParts::OPEN_PARENTHESES;
+                                $nextPartOfQuery = QueryParts::FIELD . QueryParts::OPEN_PARENTHESES;
                             }
                             else {
                                 $message = $offset . " :: Syntax Error => " . substr($query, 0, $offset+1) . " ...";
@@ -227,6 +227,8 @@ class ApiFilter {
                         }
                         break;
                 }
+
+                
             }
 
             if($openParentheses > 0) {
