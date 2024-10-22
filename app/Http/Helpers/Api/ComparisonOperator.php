@@ -16,6 +16,5 @@ class ComparisonOperator {
         'btw' => 'BETWEEN',
         'nbtw' => 'NOT BETWEEN',
         'like' => 'LIKE',
-        '_'=>'_',
     ];
 }

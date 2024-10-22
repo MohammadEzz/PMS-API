@@ -63,7 +63,7 @@ class ApiFilter {
                             }, $operators);
 
                             // like, nbtw operators
-                            if(array_search(substr($query, $offset, 5), $operatorsWithOpenPracket) > 0)
+                            if(in_array(substr($query, $offset, 5), $operatorsWithOpenPracket))
                             {
                                 $operator = ComparisonOperator::COMPARISON[substr($query, $offset, 4)];
                                 $sqlQuery .= "$operator ";
@@ -73,7 +73,7 @@ class ApiFilter {
                             }
 
                             // btw, nin, neq, lte, gte
-                            elseif(array_search(substr($query, $offset, 4), $operatorsWithOpenPracket) > 0)
+                            elseif(in_array(substr($query, $offset, 4), $operatorsWithOpenPracket))
                             {
                                 $operator = ComparisonOperator::COMPARISON[substr($query, $offset, 3)];
                                 $sqlQuery .= $operator." ";
@@ -83,7 +83,7 @@ class ApiFilter {
                             }
 
                             // gt, lt, eq, in
-                            elseif(array_search(substr($query, $offset, 3), $operatorsWithOpenPracket) > 0)
+                            elseif(in_array(substr($query, $offset, 3), $operatorsWithOpenPracket))
                             {
                                 $operator = ComparisonOperator::COMPARISON[substr($query, $offset, 2)];
                                 $sqlQuery .= $operator." ";
@@ -107,7 +107,7 @@ class ApiFilter {
                                     if(count($valueAsArray) > 0 && $valueAsArray[0] !== '') {
                                         $subQuery = "(";
                                         foreach($valueAsArray as $item) {
-                                            $parameterName = (count($queryParams)+1) . $prevOperator;
+                                            $parameterName = count($queryParams) . $prevOperator;
                                             $queryParams[$parameterName] = $item;
                                             $subQuery .= ":$parameterName,";
                                         }
@@ -131,9 +131,9 @@ class ApiFilter {
                                 if($index != false) {
                                     $valueAsArray = explode(',', substr($query, $offset, $index-$offset));
                                     if(count($valueAsArray) == 2) {
-                                        $paramIndex0 = count($queryParams)+1 . $prevOperator;
-                                        $paramIndex1 = count($queryParams)+2 . $prevOperator;
+                                        $paramIndex0 = count($queryParams) . $prevOperator;
                                         $queryParams[$paramIndex0] = $valueAsArray[0];
+                                        $paramIndex1 = count($queryParams) . $prevOperator;
                                         $queryParams[$paramIndex1] = $valueAsArray[1];
                                         $subQuery =  ":$paramIndex0 AND  :$paramIndex1";
                                         $sqlQuery .= $subQuery.' ';
@@ -151,7 +151,7 @@ class ApiFilter {
                                 $index = strpos($query, ']', $offset);
                                 if($index != false) {
                                     $value = substr($query, $offset, $index-$offset);
-                                    $paramIndex = count($queryParams)+1 . 'l';
+                                    $paramIndex = count($queryParams) . 'l';
                                     if($value[0] === '%' && $value[strlen($value)-1] === '%') {
                                         $queryParams[$paramIndex] = substr($value, 1, strlen($value)-2);
                                         $subQuery = "CONCAT('%',:$paramIndex,'%')";
@@ -181,7 +181,7 @@ class ApiFilter {
                             else {
                                 $index = strpos($query, ']', $offset);
                                 if($index != false) {
-                                    $paramIndex = count($queryParams)+1 . $prevOperator;
+                                    $paramIndex = count($queryParams) . $prevOperator;
                                     $queryParams[$paramIndex] = substr($query, $offset, $index-$offset);
                                     $subQuery = ":$paramIndex";
                                     $sqlQuery .= $subQuery.' ';
@@ -205,7 +205,7 @@ class ApiFilter {
                                     $message = $offset . " :: Syntax Error => " . substr($query, 0, $offset+1) . "=> Missing Close Parentheses";
                                     throw new URLParameterException($message);
                                 }
-                                $lastClosedParenthesesIndex =  $offset;
+                                $lastClosedParenthesesIndex =  $offset; // Info for debug only.
                                 $sqlQuery .= ") ";
                                 $offset++;
                                 $nextPartOfQuery = QueryParts::CLOSE_PARENTHESES . QueryParts::AND . QueryParts::OR;
