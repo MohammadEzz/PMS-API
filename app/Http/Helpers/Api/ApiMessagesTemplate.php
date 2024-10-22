@@ -9,7 +9,7 @@ class ApiMessagesTemplate {
         $result["code"] = $code;
         $result["message"] = $message;
 
-        if ($data) { 
+        if ($data || is_array($data)) { 
             $result["data"] = $data;
         }
 
