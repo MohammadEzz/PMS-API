@@ -7,7 +7,6 @@ use App\Http\Helpers\Api\ApiMessagesTemplate;
 use App\Http\Requests\DiseaseActiveIngredientRequest;
 use App\Models\ActiveIngredient;
 use App\Models\Disease;
-use Illuminate\Http\Request;
 
 class DiseaseActiveIngredientController extends Controller
 {
@@ -18,14 +17,12 @@ class DiseaseActiveIngredientController extends Controller
      */
     public function index($diseaseId)
     {
-        $disease = Disease::find($diseaseId);
+        $disease = Disease::findOrFail($diseaseId);
 
-        if($disease) {
-            $diseaseActiveIngredients = $disease->activeIngredients()->get();
-            return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredients Readed Successfully", $diseaseActiveIngredients);
-        }
-        else
-            return ApiMessagesTemplate::createResponse(false, 404, "Disease Not Exist");
+        $diseaseActiveIngredients = $disease->activeIngredients()->get();
+
+        return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredients Readed Successfully", $diseaseActiveIngredients);
+        
     }
 
     /**
@@ -37,24 +34,19 @@ class DiseaseActiveIngredientController extends Controller
     public function store(DiseaseActiveIngredientRequest $request, $diseaseId)
     {
         $activeingredientId = $request->input("activeingredient_id");
-        $disease = Disease::find($diseaseId);
-        $activeIngredient = ActiveIngredient::find($activeingredientId);
+        ActiveIngredient::findOrFail($activeingredientId);
+        $disease = Disease::findOrFail($diseaseId);
 
-        if(!$disease)
-            return ApiMessagesTemplate::createResponse(false, 404, "Disease Not Exist");
-        elseif(!$activeIngredient)
-            return ApiMessagesTemplate::createResponse(false, 404, "Active Ingredient Not Exist");
-        elseif($disease && $activeIngredient) {
-            $disease->activeIngredients()->attach($activeingredientId, ["order" => $request->input("order")]);
-            $diseaseActiveIngredient = $disease
-            ->activeIngredients()
-            ->where("activeingredients.id", $activeingredientId)
-            ->get();
+        $disease->activeIngredients()->attach($activeingredientId, ["order" => $request->input("order")]);
+        $diseaseActiveIngredient = $disease
+        ->activeIngredients()
+        ->where("activeingredients.id", $activeingredientId)
+        ->get();
 
-            if($diseaseActiveIngredient->isNotEmpty()){
-                return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredients Created Successfully", $diseaseActiveIngredient);
-            }
-        }
+        if($diseaseActiveIngredient->isNotEmpty())
+            return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredients Created Successfully", $diseaseActiveIngredient);
+    
+        return response()->json(["message" => "Server Error"], 500);
     }
 
     /**
@@ -65,19 +57,12 @@ class DiseaseActiveIngredientController extends Controller
      */
     public function show($diseaseId, $activeIngredientId)
     {
-        $disease = Disease::find($diseaseId);
-        $activeIngredient = ActiveIngredient::find($activeIngredientId);
+        $disease = Disease::findOrFail($diseaseId);
+        ActiveIngredient::findOrFail($activeIngredientId);
 
-        if(!$disease) {
-            return ApiMessagesTemplate::createResponse(false, 404, "Disease Not Exist");
-        }
-        elseif(!$activeIngredient) {
-            return ApiMessagesTemplate::createResponse(false, 404, "Active Ingredient Not Exist");
-        }
-        elseif($disease && $activeIngredient) {
-            $diseaseActiveIngredient = $disease->activeIngredients()->where('activeingredients.id', $activeIngredientId)->get();
-            return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredient Readed Successfully", $diseaseActiveIngredient);
-        }
+        $diseaseActiveIngredient = $disease->activeIngredients()->where('activeingredients.id', $activeIngredientId)->get();
+
+        return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredient Readed Successfully", $diseaseActiveIngredient);
     }
 
     /**
@@ -89,32 +74,26 @@ class DiseaseActiveIngredientController extends Controller
      */
     public function update(DiseaseActiveIngredientRequest $request, $diseaseId, $activeIngredientId)
     {
-        $disease = Disease::find($diseaseId);
-        $activeIngredient = ActiveIngredient::find($activeIngredientId);
+        $disease = Disease::findOrFail($diseaseId);
+        ActiveIngredient::findOrFail($activeIngredientId);
 
-        if(!$disease)
-            return ApiMessagesTemplate::createResponse(false, 404, "Disease Not Exist");
-        elseif(!$activeIngredient)
-            return ApiMessagesTemplate::createResponse(false, 404, "Active Ingredient Not Exist");
-        elseif($disease && $activeIngredient) {
-            $diseaseActiveIngredient = $disease->activeIngredients()->where('activeingredients.id', $activeIngredientId)->get();
+        $diseaseActiveIngredient = $disease->activeIngredients()->where('activeingredients.id', $activeIngredientId)->get();
 
-            if($diseaseActiveIngredient->isNotEmpty()) {
-                $isUpdated = $disease->activeIngredients()
-                ->updateExistingPivot($activeIngredientId,
-                ["activeingredient_id" => $request->input("activeingredient_id"), "order" => $request->input("order")]);
+        if($diseaseActiveIngredient->isNotEmpty()) {
+            $isUpdated = $disease->activeIngredients()
+            ->updateExistingPivot($activeIngredientId,
+            ["activeingredient_id" => $request->input("activeingredient_id"), "order" => $request->input("order")]);
 
-                if($isUpdated) {
-                    $diseaseActiveIngredient = $disease->activeIngredients()
-                    ->where('disease_activeingredient.activeingredient_id', $request->input("activeingredient_id"))
-                    ->first();
+            if($isUpdated) {
+                $diseaseActiveIngredient = $disease->activeIngredients()
+                ->where('disease_activeingredient.activeingredient_id', $request->input("activeingredient_id"))
+                ->first();
 
-                    return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredient Updated Successfully", $diseaseActiveIngredient);
-                }
+                return ApiMessagesTemplate::createResponse(true, 200, "Disease Active Ingredient Updated Successfully", $diseaseActiveIngredient);
             }
-            else
-                return ApiMessagesTemplate::createResponse(false, 404, "Disease Not Linked With This Active Ingredient");
         }
+        else
+            return ApiMessagesTemplate::createResponse(false, 422, "Disease Not Linked With This Active Ingredient");
     }
 
     /**
@@ -125,25 +104,19 @@ class DiseaseActiveIngredientController extends Controller
      */
     public function destroy($diseaseId, $activeIngredientId)
     {
-        $disease = Disease::find($diseaseId);
-        $activeIngredient = ActiveIngredient::find($activeIngredientId);
+        $disease = Disease::findOrFail($diseaseId);
+        ActiveIngredient::findOrFail($activeIngredientId);
 
-        if(!$disease)
-            return ApiMessagesTemplate::createResponse(false, 404, "Disease Not Exist");
-        elseif(!$activeIngredient)
-            return ApiMessagesTemplate::createResponse(false, 404, "Active Ingredient Not Exist");
-        elseif($disease && $activeIngredient) {
-            $diseaseActiveIngredient = $disease->activeIngredients()->where('activeingredients.id', $activeIngredientId)->get();
+        $diseaseActiveIngredient = $disease->activeIngredients()->where('activeingredients.id', $activeIngredientId)->get();
 
-            if($diseaseActiveIngredient->isNotEmpty()) {
-                $disease->activeIngredients()->detach($activeIngredientId);
-                $isDeleted = $disease->activeIngredients()->where('activeingredients.id', $activeIngredientId)->get();
+        if($diseaseActiveIngredient->isNotEmpty()) {
+            $isDeleted = $disease->activeIngredients()->detach($activeIngredientId);
 
-                if($isDeleted->isEmpty())
-                    return ApiMessagesTemplate::createResponse(true, 201, "Disease Active Ingredient Deleted Successfully");
-            }
-            else
-                return ApiMessagesTemplate::createResponse(false, 404, "Disease Not Linked With This Active Ingredient");
+            if($isDeleted)
+                return response()->json([], 204);
         }
+        else
+            return ApiMessagesTemplate::createResponse(false, 422, "Disease Not Linked With This Active Ingredient");
+        
     }
 }
