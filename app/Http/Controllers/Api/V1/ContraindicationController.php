@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Helpers\Api\ApiMessagesTemplate;
 use App\Http\Requests\ContraindicationRequest;
 use App\Models\Contraindication;
-use Illuminate\Http\Request;
 
 class ContraindicationController extends Controller
 {
@@ -19,8 +18,7 @@ class ContraindicationController extends Controller
     {
         $contraindications = Contraindication::all();
 
-        $response = ApiMessagesTemplate::apiResponseDefaultMessage(true, 200, "Contraindications Readed Successfully", ['contraindications' => $contraindications]);
-        return response()->json($response,200);
+        return ApiMessagesTemplate::createResponse(true, 200, "Contraindications Readed Successfully", ['contraindications' => $contraindications]);
     }
 
     /**
@@ -31,21 +29,20 @@ class ContraindicationController extends Controller
      */
     public function store(ContraindicationRequest $request)
     {
-        $data = $request->input();
+        $data = $request->validated();
 
-        $contraindication = new Contraindication();
-        $contraindication->category = $data['category'];
-        $contraindication->description = $data['description'];
-        $contraindication->level = $data['level'];
-        $contraindication->order = $data['order'];
-        $contraindication->drug_id = $data['drug_id'];
-        $isCreated = $contraindication->save();
+        $isCreated = Contraindication::create([
+            "category" => $data['category'],
+            "description" => $data['description'],
+            "level" => $data['level'],
+            "order" => $data['order'],
+            "drug_id" => $data['drug_id']
+        ]);
 
-        if($isCreated) {
-            $response = ApiMessagesTemplate::apiResponseDefaultMessage(true, 201, "Contraindication Added Successfully");
-            return response()->json($response, 201);
-        }
-        return response()->json([], 400);
+        if($isCreated)
+            return ApiMessagesTemplate::createResponse(true, 201, "Contraindication Added Successfully", ["id" => $isCreated->id]);
+
+        return response()->json(["message" => "Server Error"], 500);
     }
 
     /**
@@ -56,16 +53,9 @@ class ContraindicationController extends Controller
      */
     public function show($id)
     {
-        $contraindication = Contraindication::find($id);
+        $contraindication = Contraindication::findOrFail($id);
 
-        if($contraindication){
-            $response = ApiMessagesTemplate::apiResponseDefaultMessage(true, 200, "Contraindication Readed Successfully", ["contraindication" => $contraindication]);
-            return response()->json($response, 200);
-        }
-        else {
-            $response = ApiMessagesTemplate::apiResponseDefaultMessage(false, 404, "Contraindication Not Exist");
-            return response()->json($response, 404);
-        }
+        return ApiMessagesTemplate::createResponse(true, 200, "Contraindication Readed Successfully", ["contraindication" => $contraindication]); 
     }
 
     /**
@@ -77,28 +67,21 @@ class ContraindicationController extends Controller
      */
     public function update(ContraindicationRequest $request, $id)
     {
-        $data = $request->input();
+        $data = $request->validated();
 
-        $contraindication = Contraindication::find($id);
+        $contraindication = Contraindication::findOrFail($id);
 
-        if($contraindication) {
-            $contraindication->category = $data['category'];
-            $contraindication->description = $data['description'];
-            $contraindication->level = $data['level'];
-            $contraindication->order = $data['order'];
-            $contraindication->drug_id = $data['drug_id'];
-            $isUpdated = $contraindication->save();
+        $contraindication->category = $data['category'];
+        $contraindication->description = $data['description'];
+        $contraindication->level = $data['level'];
+        $contraindication->order = $data['order'];
+        $contraindication->drug_id = $data['drug_id'];
+        $isUpdated = $contraindication->save();
 
-            if($isUpdated) {
-                $response = ApiMessagesTemplate::apiResponseDefaultMessage(true, 204, "Contraindication Updated Succefully");
-                return response()->json($response, 201);
-            }
-            return response()->json([], 400);
-        }
-        else {
-            $response = ApiMessagesTemplate::apiResponseDefaultMessage(false, 404, "Contraindication Not Exist");
-            return response()->json($response, 404);
-        }
+        if($isUpdated)
+            return response()->json([], 204);
+
+        return response()->json(["message" => "Server Error"], 500); 
     }
 
     /**
@@ -109,19 +92,13 @@ class ContraindicationController extends Controller
      */
     public function destroy($id)
     {
-        $contraindication = Contraindication::find($id);
+        $contraindication = Contraindication::findOrFail($id);
 
-        if($contraindication) {
-            $isDeleted = $contraindication->delete();
+        $isDeleted = $contraindication->delete();
 
-            if($isDeleted) {
-                $response = ApiMessagesTemplate::apiResponseDefaultMessage(true, 204, "Contraindication Deleted Succefully");
-                return response()->json($response, 204);
-            }
-        }
-        else {
-            $response = ApiMessagesTemplate::apiResponseDefaultMessage(false, 404, "Contraindication Not Exist");
-            return response()->json($response, 404);
-        }
+        if($isDeleted) 
+            return response()->json([], 204);
+
+        return response()->json(["message" => "Server Error"], 500); 
     }
 }
