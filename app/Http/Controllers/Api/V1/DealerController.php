@@ -7,12 +7,13 @@ use App\Http\Helpers\Api\ApiField;
 use App\Http\Helpers\Api\ApiFilter;
 use App\Http\Helpers\Api\ApiMessagesTemplate;
 use App\Http\Helpers\Api\ApiSort;
+use App\Http\Repository\DealerRepository;
 use App\Models\Dealer;
 use Illuminate\Http\Request;
 
 class DealerController extends Controller
 {
-    public function index(Request $request, ApiSort $sort, ApiField $field, ApiFilter $filter)
+    public function index(Request $request, DealerRepository $repository)
     {
         $fields = [
             "id" => "id",
@@ -20,48 +21,8 @@ class DealerController extends Controller
             "name" => "name",
         ];
 
-        $fieldParams = $fields;
-        $filterParams = '';
-        $sortParams = [];
-        $rangeParams = 20;
+        $dealerItems = $repository->fetchListOfItems($request, $fields);
 
-        if($request->has('fields')) {
-            $urlFields = $request->query('fields');
-            $fieldParams = $field->buildFields($urlFields, $fields);
-        }
-
-        if($request->has('filter')) {
-            $urlFilter = $request->query('filter');
-            [$filterParams, $queryParams] = $filter->buildFilter($urlFilter, $fields);
-        }
-        
-        if($request->has('sort')) {
-            $urlSort = $request->query('sort');
-            $sortParams = $sort->buidlSort($urlSort, $fields);
-        }
-
-        if($request->has('range')) {
-            $urlRange = $request->query('range');
-            $rangeParams = strtolower($urlRange);
-        }
-
-        // Select
-        $query = Dealer::select($fieldParams);
-
-        // Where
-        $filterParams && $query->WhereRaw($filterParams, $queryParams);
-
-        // Order By | Sorting
-        if(count($sortParams) > 0) {
-            foreach($sortParams as $value){
-                [$field, $sortType] = explode('.', $value);
-                $query->orderBy($field, $sortType);
-            }
-        }
-        else $query->orderBy('name', 'asc');
-            
-        $options = $rangeParams == 'all' ? $query->get() : $query->paginate($rangeParams);
-
-        return ApiMessagesTemplate::createResponse(true, 200, "Dealers Readed Successfully", $options);
+        return ApiMessagesTemplate::createResponse(true, 200, "Dealers Readed Successfully", $dealerItems);
     }
 }
