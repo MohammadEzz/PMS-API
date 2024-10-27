@@ -3,14 +3,10 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Http\Helpers\Api\ApiField;
-use App\Http\Helpers\Api\ApiFilter;
 use App\Http\Helpers\Api\ApiMessagesTemplate;
-use App\Http\Helpers\Api\ApiSort;
+use App\Http\Repository\ActiveIngredientRepository;
 use App\Http\Requests\ActiveIngredientRequest;
 use App\Models\ActiveIngredient;
-use Exception;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class ActiveIngredientController extends Controller
@@ -20,7 +16,7 @@ class ActiveIngredientController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request, ApiFilter $filter, ApiSort $sort, ApiField $field)
+    public function index(Request $request, ActiveIngredientRepository $repository)
     {
         $fields = [
             'id' => 'id',
@@ -28,48 +24,8 @@ class ActiveIngredientController extends Controller
             "globalname" => "globalname",
         ];
 
-        $fieldParams = $fields;
-        $filterParams = '';
-        $sortParams = [];
-        $rangeParams = 20;
-
-        if($request->has('fields')) {
-            $urlFields = $request->query('fields');
-            $fieldParams = $field->buildFields($urlFields, $fields);
-        }
-
-        if($request->has('filter')) {
-            $urlFilter = $request->query('filter');
-            [$filterParams, $queryParams] = $filter->buildFilter($urlFilter, $fields);
-        }
-        
-        if($request->has('sort')) {
-            $urlSort = $request->query('sort');
-            $sortParams = $sort->buidlSort($urlSort, $fields);
-        }
-
-        if($request->has('range')) {
-            $urlRange = $request->query('range');
-            $rangeParams = strtolower($urlRange);
-        }
-
-        $query = ActiveIngredient::select($fieldParams);
-
-        $filterParams && $query->WhereRaw($filterParams, $queryParams);
-
-        if(count($sortParams) > 0) {
-            foreach($sortParams as $value){
-                [$field, $sortType] = explode('.', $value);
-                $query->orderBy($field, $sortType);
-            }
-        }
-        else {
-            $query->orderBy('id', 'asc');
-        }
-
-        $activeIngredients = $rangeParams == 'all' ? $query->get() : $query->paginate($rangeParams);
+        $activeIngredients = $repository->fetchListOfItems($request, $fields);
           
-
         return ApiMessagesTemplate::createResponse(true, 200, "Active Ingredients Readed Successfully", $activeIngredients);
     }
 
@@ -81,7 +37,7 @@ class ActiveIngredientController extends Controller
      */
     public function store(ActiveIngredientRequest $request)
     {
-        $data = $request->only(["name", "globalname"]);
+        $data = $request->validated();
 
         $isCreated = ActiveIngredient::create([
             "name" => $data['name'],
@@ -89,9 +45,9 @@ class ActiveIngredientController extends Controller
         ]);
 
         if($isCreated)
-            return ApiMessagesTemplate::createResponse(true, 200, "Active ingredient added successfully", true);
-        else
-            return ApiMessagesTemplate::createResponse(false, 400, "Active ingredient added failed", true);
+            return ApiMessagesTemplate::createResponse(true, 201, "Active ingredient added successfully", ["id" => $isCreated->id]);
+        
+        return response()->json(['message' => 'Server Error'], 500);
     }
 
     /**
@@ -102,12 +58,9 @@ class ActiveIngredientController extends Controller
      */
     public function show($id)
     {
-        $activeIngredient = ActiveIngredient::find($id);
+        $activeIngredient = ActiveIngredient::findOrFail($id);
 
-        if($activeIngredient)
-            return ApiMessagesTemplate::createResponse(true, 200, "Active ingredient readed successfully", $activeIngredient);
-        else 
-            return ApiMessagesTemplate::createResponse(false, 404, "Active ingredient not exist");
+        return ApiMessagesTemplate::createResponse(true, 200, "Active ingredient readed successfully", $activeIngredient); 
     }
 
     /**
@@ -119,21 +72,18 @@ class ActiveIngredientController extends Controller
      */
     public function update(ActiveIngredientRequest $request, $id)
     {
-        $data = $request->only(["name", "globalname"]);
-        $activeIngredient = ActiveIngredient::find($id);
+        $data = $request->validated();
 
-        if($activeIngredient) {
-            $activeIngredient->name = $data['name'];
-            $activeIngredient->globalname = $data['globalname'];
-            $isUpdated = $activeIngredient->save();
+        $activeIngredient = ActiveIngredient::findOrFail($id);
+ 
+        $activeIngredient->name = $data['name'];
+        $activeIngredient->globalname = $data['globalname'];
+        $isUpdated = $activeIngredient->save();
 
-            if($isUpdated)
-                return ApiMessagesTemplate::createResponse(true, 204, "Active ingredient updated successfully");
-            else
-                return ApiMessagesTemplate::createResponse(true, 400, "Active ingredient updated failed");
-        }
-        else 
-            return ApiMessagesTemplate::createResponse(false, 404, "Active ingredient not exist");
+        if($isUpdated)
+            return response()->json([], 204);
+        
+        return response()->json(['message' => 'Server Error'], 500);
     }
 
     /**
@@ -144,18 +94,13 @@ class ActiveIngredientController extends Controller
      */
     public function destroy($id)
     {
-        $activeIngredient = ActiveIngredient::find($id);
+        $activeIngredient = ActiveIngredient::findOrFail($id);
 
-        if($activeIngredient) {
-
-            $isDeleted = $activeIngredient->delete();
-
-            if($isDeleted)
-                return ApiMessagesTemplate::createResponse(true, 204, "Active ingredient deleted successfully");
-            else
-                return ApiMessagesTemplate::createResponse(true, 400, "Active ingredient deleted failed");
-        }
-        else
-            return ApiMessagesTemplate::createResponse(false, 404, "Active ingredient not exist");
+        $isDeleted = $activeIngredient->delete();
+        
+        if($isDeleted)
+            return response()->json([], 204);
+        
+        return response()->json(['message' => 'Server Error'], 500);
     }
 }
