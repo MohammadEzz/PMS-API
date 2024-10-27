@@ -22,7 +22,7 @@ class DrugController extends Controller
      * @return \Illuminate\Http\Response
      */
     // public function index(Request $request, ApiFilter $filter, ApiSort $sort, ApiField $field)
-    public function index(Request $request, DrugRepository $drugRepository)
+    public function index(Request $request, DrugRepository $repository)
     {
        $fields = [
             'id' => 'drugs.id',
@@ -38,7 +38,7 @@ class DrugController extends Controller
             "created_at" => "drugs.created_at",
         ];
      
-        $drugs = $drugRepository->fetchListOfItems($request, $fields);
+        $drugs = $repository->fetchListOfItems($request, $fields);
         
         return ApiMessagesTemplate::createResponse(true, 200, "Drugs readed successfully", $drugs);
     }
@@ -108,7 +108,7 @@ class DrugController extends Controller
 
         $isDeleted = $drug->delete();
         if($isDeleted)
-            return response()->json([$isDeleted], 204);
+            return response()->json([], 204);
 
         return response()->json(['message' => 'Server Error'], 500);
     }
