@@ -9,6 +9,7 @@ use App\Http\Helpers\Api\ApiMessagesTemplate;
 use App\Http\Helpers\Api\ApiSort;
 use App\Http\Helpers\Api\ListOfOperator;
 use App\Http\Helpers\Api\Operator;
+use App\Http\Repository\CountryRepository;
 use App\Models\Country;
 use ErrorException;
 use Exception;
@@ -22,7 +23,7 @@ class CountryController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request, ApiSort $sort, ApiField $field, ApiFilter $filter)
+    public function index(Request $request, CountryRepository $repository)
     {
         $fields = [
             "id" => "id",
@@ -34,49 +35,8 @@ class CountryController extends Controller
             "phonecode" => "phonecode",
         ];
 
-        $fieldParams = $fields;
-        $filterParams = '';
-        $sortParams = [];
-        $rangeParams = 20;
+        $countryItems = $repository->fetchListOfItems($request, $fields);
 
-        if($request->has('fields')) {
-            $urlFields = $request->query('fields');
-            $fieldParams = $field->buildFields($urlFields, $fields);
-        }
-
-        if($request->has('filter')) {
-            $urlFilter = $request->query('filter');
-            [$filterParams, $queryParams] = $filter->buildFilter($urlFilter, $fields);
-        }
-        
-        if($request->has('sort')) {
-            $urlSort = $request->query('sort');
-            $sortParams = $sort->buidlSort($urlSort, $fields);
-        }
-
-        if($request->has('range')) {
-            $urlRange = $request->query('range');
-            $rangeParams = strtolower($urlRange);
-        }
-
-        // Select
-        $query = Country::select($fieldParams);
-
-        // Where
-        $filterParams && $query->WhereRaw($filterParams, $queryParams);
-
-        // Order By | Sorting
-        if(count($sortParams) > 0) {
-            foreach($sortParams as $value){
-                [$field, $sortType] = explode('.', $value);
-                $query->orderBy($field, $sortType);
-            }
-        }
-        else $query->orderBy('name', 'asc');
-
-        
-        $options = $rangeParams == 'all' ? $query->get() : $query->paginate($rangeParams);
-
-        return ApiMessagesTemplate::createResponse(true, 200, "Countries readed successfully", $options);
+        return ApiMessagesTemplate::createResponse(true, 200, "Countries readed successfully", $countryItems);
     }
 }
