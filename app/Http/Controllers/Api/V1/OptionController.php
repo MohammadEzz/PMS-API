@@ -7,6 +7,7 @@ use App\Http\Helpers\Api\ApiField;
 use App\Http\Helpers\Api\ApiFilter;
 use App\Http\Helpers\Api\ApiMessagesTemplate;
 use App\Http\Helpers\Api\ApiSort;
+use App\Http\Repository\OptionRepository;
 use App\Models\Option;
 use Exception;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class OptionController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request, ApiFilter $filter, ApiSort $sort, ApiField $field)
+    public function index(Request $request, OptionRepository $repository)
     {
 
         $fields = [
@@ -28,50 +29,8 @@ class OptionController extends Controller
             "order" => "order",
         ];
 
-        $fieldParams = $fields;
-        $filterParams = '';
-        $sortParams = [];
-        $rangeParams = 20;
+        $optionItems = $repository->fetchListOfItems($request, $fields);
 
-        if($request->has('fields')) {
-            $urlFields = $request->query('fields');
-            $fieldParams = $field->buildFields($urlFields, $fields);
-        }
-
-        if($request->has('filter')) {
-            [$filterParams, $queryParams] = $filter->buildFilter($request->query('filter'), $fields);
-        }
-        
-        if($request->has('sort')) {
-            $urlSort = $request->query('sort');
-            $sortParams = $sort->buidlSort($urlSort, $fields);
-        }
-
-        if($request->has('range')) {
-            $urlRange = $request->query('range');
-            $rangeParams = strtolower($urlRange);
-        }
-
-        // Select
-        $query = Option::select($fieldParams);
-
-        // Where
-        $filterParams && $query->WhereRaw($filterParams, $queryParams);
-
-        // Order By | Sort
-        if(count($sortParams) > 0) {
-            foreach($sortParams as $value){
-                [$field, $sortType] = explode('.', $value);
-                $query->orderBy($field, $sortType);
-            }
-        }
-        else {
-            $query->orderBy('order', 'asc');
-        }
-        
-        // Limit
-        $options = $rangeParams == 'all' ? $query->get() : $query->paginate($rangeParams);
-
-        return ApiMessagesTemplate::apiResponseDefaultMessage(true, 200, "Options Readed Successfully", $options);
+        return ApiMessagesTemplate::apiResponseDefaultMessage(true, 200, "Options Readed Successfully", $optionItems);
     }
 }
